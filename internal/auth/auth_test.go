@@ -127,7 +127,7 @@ func TestGetBearerToken(t *testing.T) {
 	}{
 		{
 			name: "Successful fetching",
-			httpHeader: map[string][]string{
+			httpHeader: http.Header{
 				"Authorization": {"Bearer stringToken"},
 			},
 			wantBearerToken: "stringToken",
@@ -135,13 +135,13 @@ func TestGetBearerToken(t *testing.T) {
 		},
 		{
 			name:            "Empty header",
-			httpHeader:      map[string][]string{},
+			httpHeader:      http.Header{},
 			wantBearerToken: "",
 			wantErr:         true,
 		},
 		{
 			name: "Wrong header format",
-			httpHeader: map[string][]string{
+			httpHeader: http.Header{
 				"Authorization": {"BearerstringToken"},
 			},
 			wantBearerToken: "",

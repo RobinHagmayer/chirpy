@@ -61,12 +61,14 @@ func (cfg *apiConfig) handlerCreateUser(w http.ResponseWriter, r *http.Request) 
 
 func (cfg *apiConfig) handlerLoginUser(w http.ResponseWriter, r *http.Request) {
 	type requestParameters struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
+		Email            string `json:"email"`
+		Password         string `json:"password"`
+		ExpiresInSeconds *int   `json:"expires_in_seconds,omitempty"`
 	}
 
 	type response struct {
 		User
+		Token string `json:"token"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -88,6 +90,17 @@ func (cfg *apiConfig) handlerLoginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	expiresIn := time.Hour
+	if reqParams.ExpiresInSeconds != nil && *reqParams.ExpiresInSeconds <= 3600 {
+		expiresIn = time.Duration(*reqParams.ExpiresInSeconds) * time.Second
+	}
+
+	tokenString, err := auth.MakeJWT(dbUser.ID, cfg.tokenSecret, expiresIn)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Couldn't create a JWT token", err)
+		return
+	}
+
 	respondWithJson(w, http.StatusOK, response{
 		User: User{
 			ID:        dbUser.ID,
@@ -95,5 +108,6 @@ func (cfg *apiConfig) handlerLoginUser(w http.ResponseWriter, r *http.Request) {
 			UpdatedAt: dbUser.UpdatedAt,
 			Email:     dbUser.Email,
 		},
+		Token: tokenString,
 	})
 }
